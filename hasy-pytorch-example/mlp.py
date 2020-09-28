@@ -25,13 +25,40 @@ class Net(nn.Module):
         square kernel size = RGB in image represented as matrix (more features to extract)
         """
         
-        self.fc1 = nn.Linear(32 * 32, 100)
-        self.fc2 = nn.Linear(100, 369)
+        # self.fc1 = nn.Linear(32*32, 100)
+        # self.fc2 = nn.Linear(100, 369)
+        ## Ng model
+        self.conv1 = nn.Conv2d(in_channels =1, out_channels=32, kernel_size=3)
+        self.pool1 = nn.BatchNorm2d(32)
+        self.conv2 = nn.Conv2d(in_channels =32, out_channels=64, kernel_size=3)
+        self.pool2 = nn.BatchNorm2d(64)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3)
+        self.pool3 = nn.BatchNorm2d(128)
 
+        self.fc1 = nn.Linear(in_features = 2*2*128, out_features=760)
+    
+        self.fc2 = nn.Linear(in_features=760, out_features= 369)
+        self.dropout = nn.Dropout2d(.25)
+ 
+        
+        
     def forward(self, x):
-        x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        #  Ng Model
+        x = self.pool1(self.conv1(x))
+        x = F.relu(F.max_pool2d(x,2))
+        x = self.pool2(self.conv2(x))
+        x = F.relu(F.max_pool2d(x,2))
+        x = self.pool3(self.conv3(x))
+        x = F.relu(F.max_pool2d(x,2))   
+
+        # Fully connected with dropout  from Ng model
+        x = torch.flatten(x,1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x) 
+
+
         return F.log_softmax(x, dim=1)
 
 
@@ -108,7 +135,7 @@ class HASY(data.Dataset):
 
 def main():
     # Training settings
-    batch_size = 100
+    batch_size = 50
     test_batch_size = 1000
     epochs = 5
     lr = 0.01
@@ -121,6 +148,7 @@ def main():
     torch.manual_seed(seed)
 
     device = torch.device("cuda" if use_cuda else "cpu")
+    print ("Device",device)
 
     kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
