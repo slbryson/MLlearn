@@ -5,6 +5,8 @@ __pycache__/
 
 # C extensions
 *.so
+#ingore the data file
+data/
 
 # Distribution / packaging
 .Python

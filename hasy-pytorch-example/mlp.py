@@ -27,17 +27,26 @@ class Net(nn.Module):
         
         # self.fc1 = nn.Linear(32*32, 100)
         # self.fc2 = nn.Linear(100, 369)
+        in_channels_layer1 = 1
+        out_channels_layer1 = 32
+        in_channels_layer2 = out_channels_layer1
+        out_channels_layer2 = 64
+        in_channels_layer3 = out_channels_layer2
+        out_channels_layer3 = 256
+        kernel_size = 3
+        out_features_layer1 = 712
+        out_features = 369
         ## Ng model
-        self.conv1 = nn.Conv2d(in_channels =1, out_channels=32, kernel_size=3)
-        self.pool1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(in_channels =32, out_channels=64, kernel_size=3)
-        self.pool2 = nn.BatchNorm2d(64)
-        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3)
-        self.pool3 = nn.BatchNorm2d(128)
+        self.conv1 = nn.Conv2d(in_channels =in_channels_layer1, out_channels=out_channels_layer1, kernel_size=kernel_size)
+        self.pool1 = nn.BatchNorm2d(out_channels_layer1)
+        self.conv2 = nn.Conv2d(in_channels =in_channels_layer2, out_channels=out_channels_layer2, kernel_size=kernel_size)
+        self.pool2 = nn.BatchNorm2d(out_channels_layer2)
+        self.conv3 = nn.Conv2d(in_channels=in_channels_layer3, out_channels=out_channels_layer3, kernel_size=kernel_size)
+        self.pool3 = nn.BatchNorm2d(out_channels_layer3)
 
-        self.fc1 = nn.Linear(in_features = 2*2*128, out_features=760)
-    
-        self.fc2 = nn.Linear(in_features=760, out_features= 369)
+        self.fc1 = nn.Linear(in_features = 2*2*out_channels_layer3, out_features=out_features_layer1)
+        self.fcbn = nn.BatchNorm1d(out_features_layer1)
+        self.fc2 = nn.Linear(in_features=out_features_layer1, out_features= out_features)
         self.dropout = nn.Dropout2d(.25)
  
         
@@ -54,6 +63,7 @@ class Net(nn.Module):
         # Fully connected with dropout  from Ng model
         x = torch.flatten(x,1)
         x = self.fc1(x)
+        x = self.fcbn(x)
         x = F.relu(x)
         x = self.dropout(x)
         x = self.fc2(x) 
@@ -137,7 +147,7 @@ def main():
     # Training settings
     batch_size = 50
     test_batch_size = 1000
-    epochs = 5
+    epochs = 8
     lr = 0.01
     momentum = 0.5
     no_cuda = False
@@ -150,7 +160,7 @@ def main():
     device = torch.device("cuda" if use_cuda else "cpu")
     print ("Device",device)
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+    kwargs = {'num_workers': 2, 'pin_memory': True} if use_cuda else {}
     train_loader = torch.utils.data.DataLoader(
         HASY('../data', train=True, download=True,
              transform=transforms.Compose([transforms.ToTensor()])),
