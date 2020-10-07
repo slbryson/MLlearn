@@ -98,7 +98,7 @@ def test(model, device, test_loader):
 class HASY(data.Dataset):
     def __init__(self, root, train=True, transform=None, target_transform=None, download=False):
         self.root = os.path.expanduser(root)
-        self.data = hasy_tools.load_data()
+        self.data = hasy_tools.load_data(mode='fold-2') # see function comments
         self.train = train
         self.transform = transform
         self.target_transform = target_transform
@@ -134,6 +134,7 @@ class HASY(data.Dataset):
 
 
 def main():
+    PATH = "hasy-visionTeX-model.pt"
     # Training settings
     batch_size = 50
     test_batch_size = 1000
@@ -165,11 +166,28 @@ def main():
 
     model = Net().to(device)
     optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
-
+    
     for epoch in range(1, epochs + 1):
         train(log_interval, model, device, train_loader, optimizer, epoch)
         test(model, device, test_loader)
-
+    
+    print("Model's state_dict:")
+    for param_tensor in model.state_dict():
+        print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+    
+    print("Optimizer's state_dict:")
+    for var_name in optimizer.state_dict():
+        print(var_name, "\t", optimizer.state_dict()[var_name])
+    
+    torch.save(model.state_dict(), PATH)
+    '''
+    when loading this make sure to:
+    device = torch.device("cuda")
+    model = TheModelClass(*args, **kwargs)
+    model.load_state_dict(torch.load(PATH))
+    model.to(device)
+    # Make sure to call input = input.to(device) on any input tensors that you feed to the model    
+    '''
 
 if __name__ == '__main__':
     main()
