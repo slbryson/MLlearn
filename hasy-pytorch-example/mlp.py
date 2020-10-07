@@ -137,7 +137,7 @@ def main():
     # Training settings
     batch_size = 50
     test_batch_size = 1000
-    epochs = 5
+    epochs = 10
     lr = 0.01
     momentum = 0.5
     no_cuda = False
