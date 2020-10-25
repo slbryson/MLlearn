@@ -66,7 +66,7 @@ class Net2(nn.Module):
     def __init__(self):
         super(Net, self).__init__()
         # Creating this Net to avoid overalap with the main Net for better merging.
-          in_channels_layer1 = 1
+        in_channels_layer1 = 1
         out_channels_layer1 = 32
         in_channels_layer2 = out_channels_layer1
         out_channels_layer2 = 64
@@ -91,7 +91,7 @@ class Net2(nn.Module):
  
         
         
-   def forward(self, x):
+    def forward(self, x):
         #  Ng Model
         x = self.pool1(self.conv1(x))
         x = F.relu(F.max_pool2d(x,2))
