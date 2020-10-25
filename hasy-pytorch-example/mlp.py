@@ -25,6 +25,7 @@ class Net(nn.Module):
         square kernel size = RGB in image represented as matrix (more features to extract)
         """
         
+        
         # self.fc1 = nn.Linear(32*32, 100)
         # self.fc2 = nn.Linear(100, 369)
         ## Ng model
@@ -61,6 +62,54 @@ class Net(nn.Module):
 
         return F.log_softmax(x, dim=1)
 
+class Net2(nn.Module):
+    def __init__(self):
+        super(Net, self).__init__()
+        # Creating this Net to avoid overalap with the main Net for better merging.
+          in_channels_layer1 = 1
+        out_channels_layer1 = 32
+        in_channels_layer2 = out_channels_layer1
+        out_channels_layer2 = 64
+        in_channels_layer3 = out_channels_layer2
+        out_channels_layer3 = 256
+        kernel_size = 3
+        out_features_layer1 = 712
+        out_features = 369
+        ## Ng model
+        self.conv1 = nn.Conv2d(in_channels =in_channels_layer1, out_channels=out_channels_layer1, kernel_size=kernel_size)
+        self.pool1 = nn.BatchNorm2d(out_channels_layer1)
+        self.conv2 = nn.Conv2d(in_channels =in_channels_layer2, out_channels=out_channels_layer2, kernel_size=kernel_size)
+        self.pool2 = nn.BatchNorm2d(out_channels_layer2)
+        self.conv3 = nn.Conv2d(in_channels=in_channels_layer3, out_channels=out_channels_layer3, kernel_size=kernel_size)
+        self.pool3 = nn.BatchNorm2d(out_channels_layer3)
+
+        self.fc1 = nn.Linear(in_features = 2*2*out_channels_layer3, out_features=out_features_layer1)
+        self.fcbn = nn.BatchNorm1d(out_features_layer1)
+        self.fc2 = nn.Linear(in_features=out_features_layer1, out_features= out_features)
+        # Drop out rate should be controllable as well
+        self.dropout = nn.Dropout2d(.25)
+ 
+        
+        
+   def forward(self, x):
+        #  Ng Model
+        x = self.pool1(self.conv1(x))
+        x = F.relu(F.max_pool2d(x,2))
+        x = self.pool2(self.conv2(x))
+        x = F.relu(F.max_pool2d(x,2))
+        x = self.pool3(self.conv3(x))
+        x = F.relu(F.max_pool2d(x,2))   
+
+        # Fully connected with dropout  from Ng model
+        x = torch.flatten(x,1)
+        x = self.fc1(x)
+        x = self.fcbn(x)
+        x = F.relu(x)
+        x = self.dropout(x)
+        x = self.fc2(x) 
+
+
+        return F.log_softmax(x, dim=1)
 
 def train(log_interval, model, device, train_loader, optimizer, epoch):
     model.train()
