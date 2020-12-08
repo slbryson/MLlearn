@@ -1,5 +1,6 @@
 # core modules
 import os
+import pathlib
 
 # 3rd party modules
 import torch
@@ -12,6 +13,7 @@ from PIL import Image
 
 # internal modules
 import hasy_tools
+
 
 
 class Net(nn.Module):
@@ -29,9 +31,9 @@ class Net(nn.Module):
         # self.fc1 = nn.Linear(32*32, 100)
         # self.fc2 = nn.Linear(100, 369)
         ## Ng model
-        self.conv1 = nn.Conv2d(in_channels =1, out_channels=32, kernel_size=3)
+        self.conv1 = nn.Conv2d(in_channels=1, out_channels=32, kernel_size=3)
         self.pool1 = nn.BatchNorm2d(32)
-        self.conv2 = nn.Conv2d(in_channels =32, out_channels=64, kernel_size=3)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3)
         self.pool2 = nn.BatchNorm2d(64)
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3)
         self.pool3 = nn.BatchNorm2d(128)
@@ -142,6 +144,7 @@ def test(model, device, test_loader):
     print('\nTest set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'
           .format(test_loss, correct, len(test_loader.dataset),
                   100. * correct / len(test_loader.dataset)))
+    return test_loss,  100. * correct / len(test_loader.dataset)
 
 
 class HASY(data.Dataset):
@@ -183,12 +186,19 @@ class HASY(data.Dataset):
 
 
 def main():
+    # location of saved models
+    root = pathlib.Path().absolute()
+    models_folder = "models"
     PATH = "hasy-visionTeX-model.pt"
+    PATH = os.path.join(root, models_folder, PATH)
+    PATH = pathlib.Path(PATH)
+
     # Training settings
     batch_size = 50
     test_batch_size = 1000
     epochs = 10
     lr = 0.01
+    adam_lr = 0.0001
     momentum = 0.5
     no_cuda = False
     seed = 1
@@ -214,21 +224,29 @@ def main():
         batch_size=test_batch_size, shuffle=True, **kwargs)
 
     model = Net().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+    # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
+    adam_optimizer = optim.Adam(model.parameters(), lr=adam_lr) # Adam Optimizer instead of SGD: https://arxiv.org/pdf/1412.6980.pdf
     
+    e = 0
+    loss = None
     for epoch in range(1, epochs + 1):
-        train(log_interval, model, device, train_loader, optimizer, epoch)
-        test(model, device, test_loader)
+        # train(log_interval, model, device, train_loader, optimizer, epoch)
+        train(log_interval, model, device, train_loader, adam_optimizer, epoch)
+        loss = test(model, device, test_loader)
+        e = epoch
     
-    print("Model's state_dict:")
-    for param_tensor in model.state_dict():
-        print(param_tensor, "\t", model.state_dict()[param_tensor].size())
+    # print("Model's state_dict:")
+    # for param_tensor in model.state_dict():
+    #     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
     
-    print("Optimizer's state_dict:")
-    for var_name in optimizer.state_dict():
-        print(var_name, "\t", optimizer.state_dict()[var_name])
+    # print("Optimizer's state_dict:")
+    # for var_name in adam_optimizer.state_dict():
+    #     # print(var_name, "\t", optimizer.state_dict()[var_name])
+    #     print(var_name, "\t", adam_optimizer.state_dict()[var_name])
     
-    torch.save(model.state_dict(), PATH)
+    # torch.save(model.state_dict(), PATH)
+    checkpoint = {'state_dict': model.state_dict(), 'optim_dict': adam_optimizer.state_dict()}
+    torch.save(checkpoint, PATH)
     '''
     when loading this make sure to:
     device = torch.device("cuda")
