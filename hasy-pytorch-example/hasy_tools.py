@@ -35,7 +35,8 @@ from six.moves.urllib.error import URLError
 from six.moves.urllib.error import HTTPError
 import tarfile
 import shutil
-from six.moves import cPickle as pickle
+# from six.moves import cPickle as pickle
+import pickle5 as pickle
 
 logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',
                     level=logging.INFO,

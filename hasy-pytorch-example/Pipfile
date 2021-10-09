@@ -5,18 +5,8 @@ name = "pypi"
 
 [packages]
 imageio = "*"
-scipy =  "*"
-numpy =  "*"
-#urllib="*"
-#tarfile  = "*"
-#shutil  = "*"
-matplotlib  = "*"
-sklearn  = "*"
-torch  = "*"
-torchvision  = "*"
-#cudatoolkit ="10.2.89"
 
 [dev-packages]
 
 [requires]
-python_version = "3.8"
+python_version = "3.6"

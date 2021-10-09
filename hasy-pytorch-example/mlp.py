@@ -11,6 +11,8 @@ from torchvision import transforms
 import torch.utils.data as data
 from PIL import Image
 
+import time
+
 # internal modules
 import hasy_tools
 
@@ -66,16 +68,16 @@ class Net(nn.Module):
 
 class Net2(nn.Module):
     def __init__(self):
-        super(Net, self).__init__()
+        super(Net2, self).__init__()
         # Creating this Net to avoid overalap with the main Net for better merging.
         in_channels_layer1 = 1
         out_channels_layer1 = 32
         in_channels_layer2 = out_channels_layer1
         out_channels_layer2 = 64
         in_channels_layer3 = out_channels_layer2
-        out_channels_layer3 = 256
+        out_channels_layer3 = 512
         kernel_size = 3
-        out_features_layer1 = 712
+        out_features_layer1 = 760
         out_features = 369
         ## Ng model
         self.conv1 = nn.Conv2d(in_channels =in_channels_layer1, out_channels=out_channels_layer1, kernel_size=kernel_size)
@@ -194,23 +196,24 @@ def main():
     PATH = pathlib.Path(PATH)
 
     # Training settings
-    batch_size = 50
+    batch_size = 1000
     test_batch_size = 1000
-    epochs = 10
-    lr = 0.01
-    adam_lr = 0.0001
+    epochs = 2
+    lr = 0.1
+    adam_lr = 0.01
     momentum = 0.5
     no_cuda = False
-    seed = 1
-    log_interval = 10
+    seed = 12
+    log_interval = 5
     use_cuda = not no_cuda and torch.cuda.is_available()
+
 
     torch.manual_seed(seed)
 
     device = torch.device("cuda" if use_cuda else "cpu")
     print ("Device",device)
 
-    kwargs = {'num_workers': 1, 'pin_memory': True} if use_cuda else {}
+    kwargs = {'num_workers': 4, 'pin_memory': True} if use_cuda else {'num_workers': 4}
     train_loader = torch.utils.data.DataLoader(
         HASY('../data', train=True, download=True,
              transform=transforms.Compose([transforms.ToTensor()])),
@@ -223,18 +226,26 @@ def main():
              transform=transforms.Compose([transforms.ToTensor()])),
         batch_size=test_batch_size, shuffle=True, **kwargs)
 
-    model = Net().to(device)
+    model = Net2().to(device)
     # optimizer = optim.SGD(model.parameters(), lr=lr, momentum=momentum)
     adam_optimizer = optim.Adam(model.parameters(), lr=adam_lr) # Adam Optimizer instead of SGD: https://arxiv.org/pdf/1412.6980.pdf
     
     e = 0
     loss = None
+    start_time = time.time()
+    start_intv = start_time
     for epoch in range(1, epochs + 1):
         # train(log_interval, model, device, train_loader, optimizer, epoch)
         train(log_interval, model, device, train_loader, adam_optimizer, epoch)
         loss = test(model, device, test_loader)
         e = epoch
-    
+        if epoch % log_interval ==0:
+            intv_time = time.time()
+            print ("Interval Elapsed Time = %f"%( intv_time- start_intv))
+            start_intv = time.time()
+
+    end_time = time.time()
+    print ("Total Elapsed Time = %f"%(end_time - start_time))
     # print("Model's state_dict:")
     # for param_tensor in model.state_dict():
     #     print(param_tensor, "\t", model.state_dict()[param_tensor].size())
