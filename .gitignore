@@ -133,3 +133,5 @@ dmypy.json
 
 #ingore the data file
 data/
+.wav
+.mp3
